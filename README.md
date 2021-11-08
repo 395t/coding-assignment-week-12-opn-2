@@ -1,4 +1,4 @@
-# Open world perception - Week 8 Group 2
+# Open world perception - Week 12 Group 2
 
 This week's papers are about Open world perception, particularly:
 * [ Towards Open Set Deep Networks, Bendale, Boult; 2015](https://arxiv.org/abs/1511.06233)
