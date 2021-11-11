@@ -10,7 +10,7 @@ This weeks papers are about Open World Perception, particularly:
 
 ## Towards Open Set Deep Networks
 
-For this paper there were three experiments run with various models from various repos. The datasets used are CIFAR10 and CIFAR100 in different ways to create different 'closed set' and 'open set' datasets.
+For this paper there were three experiments run with various models from various repos. The datasets used are CIFAR10 and CIFAR100 in different ways to create different 'closed set' and 'open set' datasets. Experiment notebooks were implemented in colab and are included in notebooks/OSDN/. Additionally,  two failed experiments were also included, one of the official repo, and one of a Keras implementation of the official repo.
 
 ### Experiment 1
 For the first experiment, CIFAR10 is used for closed data and then CIFAR100 is used as open set data. The data split between these two sets are 50/50 since the full structures are used. The repo (https://github.com/takumayagi/openmax-cifar10) uses chainer and uses a simple cnn model using only convolutional blocks with max pooling that is densely connected with drop out.
