@@ -29,7 +29,7 @@ CIFAR10:
 | Softmax | 94.1 | 94.1 |
 
 
-## Experiment 2
+### Experiment 2
 Experiment 2 is a follow up on experiment 1 developed in Keras which tests a simple canonical baseline. The way this model works is it does 11 class classification where the first 10 classes belongs to CIFAR10 and the remaining class is that of 'unknown'. The architecture of this model is a general CNN with many normalizations and horizontal flip augmentations.
 
 | | Accuracy | F1 |
@@ -45,7 +45,7 @@ For the final experiment the CIFAR100 dataset was used to create both open set a
 | Threshold Softmax | 0.645 | 0.645 | 
 | Softmax | 0.376 | 0.376 |
 
-# Conclusion
+### Conclusion
 In my opinion the experiment that best demonstrate the power of openmax was experiment 1. One of the biggest issues considered within openmax is how to deal with 'unknown unknowns' and one of the issues with experiment 3 is that although non of the classes are seen during training, there is still external overlap between the subcategories. For example, in CIFAR100, although there's a chance that model 3 would never have seen trout, theres a chance it would've seen flatfish, which is arguably not a complete 'unknown unknown'. Meanwhile, experiment 2 takes this completely to the other side by making all open data 'known unknowns'. This is because it's the only model that explicitly sees the open-set labels while training, and although it achieves competitive results to experiment 1, it has a much simpler task.
 
 ## Decoupling Representation and Classifier for Long-Tailed Recognition
