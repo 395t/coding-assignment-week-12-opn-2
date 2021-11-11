@@ -1,6 +1,6 @@
 # Open World Perception - Group 2
 
-This weeks papers are about Open World Perception, particularly:
+This week's papers are about Open World Perception, particularly:
 
 * [Towards Open Set Deep Networks, Bendale, Boult; 2015](https://arxiv.org/abs/1511.06233)
 * [Large-Scale Long-Tailed Recognition in an Open World, Liu, Miao, Zhan, Wang, Gong, Yu; 2019](https://arxiv.org/abs/1904.05160)
@@ -164,8 +164,6 @@ We typically found that the Square-root sampling approach was most beneficial fo
 
 All in all, the decoupled methods led to significant performance gains over the jointly trained approach. This is evident for all three datasets that we performed experiments on. We found tha the sampling method used is important when training jointly, while it is not so important when using the decoupled methods as the instance-balanced sampling led to competitive if not better results than the latter approaches. We found that the decoupled approach led to better performance on long-tailed image recognition task. The decoupled approach allowed us to re-balance the classifiers while keeping the backbone represenation network fixed. By using relatively simple methods, we were able to see that the decoupled approach is a legitimate option in improving performance of models on long-tailed datasets.
 
-# TODO: Datasets
-
 # TODO: Towards Open Set Deep Networks
 # Large-Scale Long-Tailed Recognition in an Open World
 
@@ -205,15 +203,81 @@ Places_LT open | 0.385 | 0.433 | 0.399 | 0.274 | 0.082
 
 # TODO:	Decoupling Representation and Classifier for Long-Tailed Recognition
 
-# TODO: Overcoming Classifier Imbalance for Long-tail Object Detection with Balanced Group Softmax
+# Overcoming Classifier Imbalance for Long-tail Object Detection with Balanced Group Softmax
 
 ## Dataset
 
-The authors of the paper are working with the long-tail [LVIS dataset](https://www.lvisdataset.org/) and their long-tail-sampled version of COCO [COCO-LT](https://arxiv.org/pdf/2007.11978.pdf). Both of these datasets are very large and take days to train on the hardware we had available (GTX 1060 6GB). The point of the paper is to work with long-tailed datasets, since the distribution of object categories in reality is typically imbalanced. The authors state in the paper that PASCAL VOC is manually balanced and thereby not suitable for this task. Since PASCAL VOC 2007 is a lot smaller than COCO, we decided to write a script to sample our own long-tailed version of VOC2007, VOC2007-LT.
+The authors of the paper are working with the long-tail [LVIS dataset](https://www.lvisdataset.org/) and their long-tail-sampled version of COCO [COCO-LT](https://arxiv.org/pdf/2007.11978.pdf). Both of these datasets are very large and take days to train on the hardware we had available (GTX 1060 6GB). The point of the paper is to work with long-tailed datasets, since the distribution of object categories in reality is typically imbalanced. The authors state in the paper that PASCAL VOC is manually balanced and thereby not suitable for this task. Since PASCAL VOC 2007 is a lot smaller than COCO, we decided to write a script (``VOC_sample.py``) to sample our own long-tailed version of VOC2007.
 
-TODO: image of class distribution
+<p float="middle">
+  <img src="./src/BalancedGroupSoftmax/VOC-LT_dist.png", width = "100%"/>
+</p>
 
-TODO: experiments
+The number of instances per class are now as follows:
+
+|Class name|Instances|
+|---|---|
+|person|3971|
+|car|1340|
+|chair|683|
+|bird|588|
+|pottedplant|521|
+|dog|507|
+|bottle|451|
+|bicycle|338|
+|sofa|331|
+|horse|239|
+|boat|168|
+|motorbike|118|
+|cat|83|
+|tvmonitor|59|
+|cow|31|
+|sheep|19|
+|aeroplane|15|
+|train|13|
+|bus|7|
+|diningtable|5|
+
+The full VOC2007 test set was used for testing.
+
+## Experiment
+
+[The official repo](https://github.com/FishYuLi/BalancedGroupSoftmax) was used for the experiments. It provides config files and models pretrained on COCO for many different architectures. Faster R-CNN using a ResNet-50 backbone was chosen for testing bounding box based object detection. The pretrained model is trained on the dataset for 12 epochs using SGD and a learning rate of 0.00125 to create a baseline model. Then, it is augmented with the group softmax and the classification layer is trained for another 12 epochs. The files ``label2binlabel.pt, pred_slice_with0.pt and valsplit.pkl`` have to be generated based on the class distribution. This is done by the same script that samples the dataset. The training takes about 6 hours for the baseline model and 2.5 for the bags model on a GTX 1060 GPU. The config files for the baseline and the bags model are provided in ``src/BalancedGroupSoftmax/configs``.
+
+The testing script had to be modified slightly to use the VOC style dataset instead of LVIS. It outputs the predictions in text files in the ``results`` directory. The modified script is provided in ``src/BalancedGroupSoftmax/test.py``. The predictions can then be evaluated using [this object detection metrics tool](https://github.com/rafaelpadilla/review_object_detection_metrics).
+
+## Results
+
+The results are underwhelming to say the least. The baseline model outperforms the group softmax model even on the tail classes:
+
+|Model|mAP|
+|---|---|
+|baseline|0.755|
+|BAGS|0.719|
+ 
+ |Class|baseline AP|BAGS AP|
+ |---|---|---|
+ |person|0.872|0.855|
+|car|0.824|0.785|
+|chair|0.506|0.466|
+|bird|0.762|0.730|
+|pottedplant|0.589|0.551|
+|dog|0.875|0.860|
+|bottle|0.684|0.644|
+|bicycle|0.844|0.822|
+|sofa|0.721|0.718|
+|horse|0.884|0.865|
+|boat|0.614|0.558|
+|motorbike|0.850|0.821|
+|cat|0.896|0.888|
+|tvmonitor|0.798|0.759|
+|cow|0.750|0.730|
+|sheep|0.718|0.700|
+|aeroplane|0.837|0.819|
+|train|0.812|0.756|
+|bus|0.785|0.758|
+|diningtable|0.480|0.290|
+
+We assume that a mistake was made while adapting the architecture to the new dataset but ran out of time trying to find it.
 
 # TODO: Conclusion?
-
