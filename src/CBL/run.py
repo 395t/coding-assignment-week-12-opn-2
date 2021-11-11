@@ -318,7 +318,7 @@ def plot(*, dataset):
     assert dataset in ('cifar10', 'cifar100', 'tinyimagenet')
     betas = [None, 0.9, 0.99, 0.999, 0.9999]
     best_beta = {'cifar10': 0.99, 'cifar100': 0.9, 'tinyimagenet': 0.999}[dataset]
-    best_idx = {'cifar10': 2, 'cifar100': 1, 'tinyimagenet': 2}[dataset]
+    best_idx = {'cifar10': 2, 'cifar100': 1, 'tinyimagenet': 3}[dataset]
 
 
 
