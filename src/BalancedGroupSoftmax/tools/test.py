@@ -32,7 +32,7 @@ def save_det(data, result):
         for label in range(len(result)):
             bboxes = result[label]
             for i in range(bboxes.shape[0]):               
-                if (int(round(bboxes[i][0])) < int(round(bboxes[i][2]))) and (int(round(bboxes[i][1])) < int(round(bboxes[i][3]))) and (bboxes[i][0] > 0.05):
+                if (int(round(bboxes[i][0])) < int(round(bboxes[i][2]))) and (int(round(bboxes[i][1])) < int(round(bboxes[i][3]))):
                     # class id confidence left top right bottom
                     hStr = str(label) + " " + str(bboxes[i][4]) + " " + str(int(round(bboxes[i][0]))) + " " + str(int(round(bboxes[i][1]))) + " " + str(int(round(bboxes[i][2]))) + " " + str(int(round(bboxes[i][3])))
 
