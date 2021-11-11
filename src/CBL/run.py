@@ -1,6 +1,12 @@
 import os
 from types import SimpleNamespace
 
+# For plots
+import matplotlib; matplotlib.use('Agg')
+import matplotlib.pyplot as plt; plt.rc('text', usetex=True)
+plt.rcParams['text.latex.preamble'] = [r'\usepackage{bm}']
+import seaborn as sns; sns.set(context='paper', style='whitegrid', font_scale=1.5, font='Times New Roman')
+
 import fire
 import numpy as np
 import torch
@@ -19,7 +25,7 @@ class JointClassifier(torch.nn.Module):
 
     def forward(self, x):
         feature_representation = self.backbone_nn(x)
-        pred = self.fc(F.relu(feature_representation))
+        pred = self.fc(feature_representation)
         return pred
 
 
@@ -192,7 +198,7 @@ def get_cb_weights(beta, class_counts):
         cb_weights = alpha * len(class_counts) / alpha.sum()
     return cb_weights
 
-def train(model, dset, num_epochs, bs, lr, beta):
+def train(model, dset, num_epochs, bs, lr, beta, out_file):
     tr_size = len(dset.tr_x)
     num_batches = int(np.ceil(tr_size / bs))
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -226,14 +232,13 @@ def train(model, dset, num_epochs, bs, lr, beta):
             optimizer.step()
             result.train_losses.append(loss.item())
 
-            print(f'\rep {ep:02} step {i+1:03d}/{num_batches:03d} ',
+            print(f'\rep {ep:02} step {i+1:03d}/{num_batches:03d} '
                   f'loss {loss:.4f} ', end='', flush=True) 
 
         eval_result = evaluate(model, dset, bs)
         result.eval_results.append(eval_result)
         print(f' -> eval_acc {eval_result.preds.mean():.3f} eval_loss {eval_result.losses.mean():.4f}')
 
-    out_file = os.path.join('results', f'dataset={result.dataset}..beta={result.beta}.pt')
     print(f'Training finished.  Saving model and result to {out_file}')
     model.eval()
     model = model.to(torch.device('cpu'))
@@ -295,16 +300,121 @@ def prep_data():
 def main(*,
          dataset, beta,
          epochs: int = 30, bs: int = 128, lr: float = 1e-3):
-    print(f'Training for dataset {dataset} and beta {beta}')
+    out_file = os.path.join('results', f'dataset={dataset}..beta={beta}.pt')
+    if os.path.exists(out_file):
+        print(f'\nResult dump {out_file} already exists; skipping.')
+        return
+
+    print(f'\nTraining for dataset {dataset} and beta {beta}')
     assert dataset in ('cifar10', 'cifar100', 'tinyimagenet')
     device = torch.device('cuda:0')
     dset = get_data(dataset, device)
     model = JointClassifier(dset.image_size, len(dset.class_counts)).to(device)
-    train(model, dset, epochs, bs, lr, beta)
+    train(model, dset, epochs, bs, lr, beta, out_file)
     print()
+
+_MARKERS = ['o', '^', 's', 'x', '+']
+def plot(*, dataset):
+    assert dataset in ('cifar10', 'cifar100', 'tinyimagenet')
+    betas = [None, 0.9, 0.99, 0.999, 0.9999]
+    best_beta = {'cifar10': 0.99, 'cifar100': 0.9, 'tinyimagenet': 0.999}[dataset]
+    best_idx = {'cifar10': 2, 'cifar100': 1, 'tinyimagenet': 2}[dataset]
+
+
+
+
+    # dset = get_data(dataset, torch.device('cpu'))
+    # print(f'Dataset {dataset}\n'
+    #       f'  - num_classes: {len(dset.class_counts)}\n'
+    #       f'  - train set size: {len(dset.tr_x)}\n'
+    #       f'  - test set size: {len(dset.te_x)}\n'
+    #       )
+    # cc = dset.class_counts
+    # cb_weights = get_cb_weights(best_beta, cc)
+    # fig = plt.figure(1, figsize=(6, 4))
+    # ax = fig.add_subplot()
+    # ax.bar(np.arange(len(cc)), cc, label='Class Size')
+    # ax2 = ax.twinx()
+    # ax2.plot(np.arange(len(cc)), cb_weights, label='Loss Weight', color='red')
+    # ax2.set_ylabel('Loss Weight')
+    # ax2.grid(False)
+    # ax.set_title('Class-balanced Weights')
+    # ax.grid(True, axis='y', linestyle='--', linewidth=1)
+    # ax.grid(True, axis='x', linestyle='--', linewidth=1)
+    # ax.set(
+    #     xlabel='Class Index',
+    #     ylabel='Loss Weight ($\\alpha_i$)',
+    # )
+    # fig.savefig(f'plots/{dataset}_cb_weights.pdf', dpi=300, bbox_inches='tight')
+    # fig.savefig(f'plots/{dataset}_cb_weights.png', dpi=300, bbox_inches='tight')
+    # plt.close(fig)
+
+
+
+
+    xs, ys_all, ys = [], [], None
+    for beta in betas:
+        result_path = os.path.join('./results', f'dataset={dataset}..beta={beta}.pt')
+        if not os.path.exists(result_path):
+            print(f'Dump {result_path} missing. Skipping.')
+            continue
+        dd = torch.load(result_path)['result']
+        result = dd.eval_results[-1]
+        xs.append(beta)
+        ys_all.append(result.preds.mean().item())
+        if ys is None:
+            ys = [[] for _ in dd.class_counts]
+        for i, acc in enumerate(result.acc_per_class):
+            ys[i].append(acc)
+
+    fig = plt.figure(1, figsize=(6, 4))
+    ax = fig.add_subplot()
+    width = 5
+    ax.bar(np.arange(len(xs)) * width, ys_all, label='Overall')
+    ax.bar(np.arange(len(xs)) * width + 1, ys[0], label='Largest Class')
+    ax.bar(np.arange(len(xs)) * width + 2, ys[len(ys)//2], label='Middle Class')
+    ax.bar(np.arange(len(xs)) * width + 3, ys[-1], label='Smallest Class')
+    ax.set_title('Test Accuracy vs. $\\beta$')
+    ax.grid(True, axis='y', linestyle='--', linewidth=1)
+    ax.grid(True, axis='x', linestyle='--', linewidth=1)
+    ax.set(
+        xlabel='$\\beta$',
+        ylabel='Test Accuracy (all classes)',
+        ylim=(0, 1.0)
+    )
+    ax.set_xticks((np.arange(0, 21, 5) + 1.0)[:len(xs)])
+    ax.set_xticklabels([x or 'None' for x in xs])
+    ax.set_yticks(np.arange(0, 1.1, 0.2))
+    fig.savefig(f'plots/{dataset}_beta_effect.pdf', dpi=300, bbox_inches='tight')
+    fig.savefig(f'plots/{dataset}_beta_effect.png', dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+
+    fig = plt.figure(1, figsize=(6, 4))
+    ax = fig.add_subplot()
+    ax.bar(np.arange(len(ys)), [ys[i][best_idx] for i in range(len(ys))], label=f'Class {i:02d}')
+    ax.set_title('Accuracy vs. Class')
+    ax.grid(True, axis='y', linestyle='--', linewidth=1)
+    ax.grid(True, axis='x', linestyle='--', linewidth=1)
+    ax.set(
+        xlabel='Class Index',
+        ylabel='Test Accuracy',
+        ylim=(0, 1.0)
+    )
+    # ax.set_xticks([1.2, 5.2, 9.2, 13.2, 17.2][:len(xs)])
+    # ax.set_xticklabels([x or 'None' for x in xs])
+    ax.set_yticks(np.arange(0, 1.1, 0.2))
+    fig.savefig(f'plots/{dataset}_per_class.pdf', dpi=300, bbox_inches='tight')
+    fig.savefig(f'plots/{dataset}_per_class.png', dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+
+
+
 
 if __name__ == '__main__':
     fire.Fire({
         'train': main,
         'prep_data': prep_data,
+        'plot': plot,
     })

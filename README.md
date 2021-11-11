@@ -48,6 +48,95 @@ For the final experiment the CIFAR100 dataset was used to create both open set a
 ### Conclusion
 In my opinion the experiment that best demonstrate the power of openmax was experiment 1. One of the biggest issues considered within openmax is how to deal with 'unknown unknowns' and one of the issues with experiment 3 is that although non of the classes are seen during training, there is still external overlap between the subcategories. For example, in CIFAR100, although there's a chance that model 3 would never have seen trout, theres a chance it would've seen flatfish, which is arguably not a complete 'unknown unknown'. Meanwhile, experiment 2 takes this completely to the other side by making all open data 'known unknowns'. This is because it's the only model that explicitly sees the open-set labels while training, and although it achieves competitive results to experiment 1, it has a much simpler task.
 
+
+## Class-Balanced Loss Based on Effective Number of Samples
+### **Reproducibility**
+All implementation is provided in `./src/CBL/run.py`.  To reproduce the experiments, run the following in the `./src/CBL/` directory:
+```shell
+python run.py prep_data  # Run this once to fix TinyImagenet
+python run.py train --dataset {cifar10,cifar100,tinyimagenet} --beta {None,0.9,0.99,0.999,0.9999}
+python run.py plot --dataset {cifar10,cifar100,tinyimagenet}
+```
+
+### **Experiment Setup**
+
+We fixed the long-tailed datasets and the classifier architecture across this method and the following one (Decoupling Representation and Classifier for Long-Tailed Recognition), so our results can be compared.
+
+**Dataset** <br>
+We used the following three datasets to test the method:
+* **CIFAR-10**: Contains 10 classes with image size 32x32.  We preprocess this dataset to make it long-tailed. The processed training data contains 12650 examples.  Test set is unmodified.
+* **CIFAR-100**: Contains 100 classes with image size 32x32.  We preprocess this dataset to make it long-tailed for a total of 16700 training examples.  Test set is unmodified.
+* **TinyImagenet**: Contains 200 classes with image size 64x64.  We preprocess this dataset to make it long-tailed for a total of 33400 training examples.  Test set is unmodified.
+
+**Model Architecture** <br>
+We base our model on a ResNet50 backbone provided by PyTorch Model Zoo.  However, we modify the last layer of the ResNet model to have output dimension equal to the image dimension (e.g. `3 * 32 * 32` for CIFAR-10/100).  Then we add the final dense layer that turns this into classifier logits.   We do not use any pre-trained weights, and train all of our classifiers from scratch.
+
+**Comparison**
+We vary the most important hyperparameter $\beta$, which controls the the degree to which we account for the important of each additional example for a given class.  $\beta=0$ means we treat every example for the class as being represented by a single prototype, and the proposed method reduces to vanilla cross-entropy loss.  When $\beta\to 1$, that means we reweight each class by their counts.  Thus, $\beta$ allows us to control which point in between the above two extreme we want to be at.
+
+Following the paper, we do a simple grid search over the values $\beta=0.9, 0.99, 0.999, 0.9999$.  We also disable class reweighting as a baseline for comparison.
+
+### **Results: CIFAR-10**
+
+As we can see in the following bar graph, most of the accuracy still comes from the most dominant class with largest number of examples in the dataset (orange bar).
+As expected, the accuracies for underrepresented classes (green and red bars) generally improve when using class-balanced loss, although their accuracies are still significantly lower than that of the largest class.
+
+However, we do notice that the overall accuracy over all classes (blue bar) does improve with class rebalancing, where the peak accuracy of ~40% is achieved for $\beta=0.99$.
+We also observe that $\beta$ is indeed an important hyperparameter that requires tuning, since the best performance is achieved in some middle value of $\beta=0.99$.
+
+<p float="middle">
+  <img src="./src/CBL/plots/cifar10_beta_effect.png", width = "70%"/>
+</p>
+
+
+Below, we plot the per-class accuracy for the best performing value of $\beta$.  We can see that, even with class-rebalancing, the accuracy of **most** underrepresented classes still suffer quite a lot. We also include the class counts and per-class loss weights for reference (right).
+
+<p float="middle">
+  <img src="./src/CBL/plots/cifar10_per_class.png", width = "48%"/>
+  <img src="./src/CBL/plots/cifar10_cb_weights.png", width = "48%"/>
+</p>
+
+
+
+### **Results: CIFAR-100**
+
+We repeat the same experiment for CIFAR-10.  The general trends for overall accuracy and the largest/middle/smallest classes stay somewhat similar, except for the smallest class (red bar).
+
+<p float="middle">
+  <img src="./src/CBL/plots/cifar100_beta_effect.png", width = "70%"/>
+</p>
+
+To further investigate into what's happening across all classes, we plotted the the accuracy of every class.  Surprisingly for CIFAR-100, some of the smallest classes achieved fairly high accuracy, even though the loss weights pretty even across all classes.  We believe this is due to CIFAR-100 having 10 times more classes, and the model is simply not seeing enough of every class over the 30 epochs we train it for.  We expect this fluctuation to smooth out if we train for longer with better-tuned training hyperparameters such as learning rate, warm-up steps, and learning rate decay.  
+
+<p float="middle">
+  <img src="./src/CBL/plots/cifar100_per_class.png", width = "48%"/>
+  <img src="./src/CBL/plots/cifar100_cb_weights.png", width = "48%"/>
+</p>
+
+### **Results: TinyImagenet**
+
+Lastly, we conducted the same experiment for TinyImagenet.  This is arguably the most challenging dataset we tried, with 200 classes and larger images. As shown below, the class imbalance issue was much more pronounced for ImageNet, presumably because of even larger number of classes.
+
+<p float="middle">
+  <img src="./src/CBL/plots/tinyimagenet_beta_effect.png", width = "70%"/>
+</p>
+
+Overall, the plots look similar to those for CIFAR-100.
+
+<p float="middle">
+  <img src="./src/CBL/plots/tinyimagenet_per_class.png", width = "48%"/>
+  <img src="./src/CBL/plots/tinyimagenet_cb_weights.png", width = "48%"/>
+</p>
+
+
+
+### **Conclusions**
+From the above experiments, we drew the following conclusions:
+* For class-balanced loss, $\beta$ really needs to be tuned for each dataset.
+* Loss weights see a significant change only for extremely small classes.  Once a class has over ~100 examples, its weight is essentially equal to that of the largest class.
+* It is important to train the model for sufficient number of epochs to ensure that the model is given enough exposure to the smallest classes.
+
+
 ## Decoupling Representation and Classifier for Long-Tailed Recognition
 
 ### **Code Structure**
