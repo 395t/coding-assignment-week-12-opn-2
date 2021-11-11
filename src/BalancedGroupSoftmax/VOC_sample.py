@@ -187,7 +187,7 @@ for class_name in class_dict:
             file_list.append(filename)
             
 # write images to use
-with open("train.txt", "w") as f:
+with open("./data/VOC2007/train/ImageSets/Main/train.txt", "w") as f:
     for filename in file_list:
         f.write(filename.replace(".xml", "") + "\n")
 
