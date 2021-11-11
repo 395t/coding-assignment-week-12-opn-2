@@ -164,7 +164,7 @@ We typically found that the Square-root sampling approach was most beneficial fo
 
 All in all, the decoupled methods led to significant performance gains over the jointly trained approach. This is evident for all three datasets that we performed experiments on. We found tha the sampling method used is important when training jointly, while it is not so important when using the decoupled methods as the instance-balanced sampling led to competitive if not better results than the latter approaches. We found that the decoupled approach led to better performance on long-tailed image recognition task. The decoupled approach allowed us to re-balance the classifiers while keeping the backbone represenation network fixed. By using relatively simple methods, we were able to see that the decoupled approach is a legitimate option in improving performance of models on long-tailed datasets.
 
-# TODO: Towards Open Set Deep Networks
+<!-- # TODO: Towards Open Set Deep Networks -->
 # Large-Scale Long-Tailed Recognition in an Open World
 
 ## Experimental Setup
@@ -199,9 +199,9 @@ Tiny-ImageNet_LT | 0.228 | 0.285 | 0.247 | 0.157 | -
 Places_LT | 0.389 | 0.435 | 0.403 | 0.279 | -
 Places_LT open | 0.385 | 0.433 | 0.399 | 0.274 | 0.082
 
-# TODO:	Class-Balanced Loss Based on Effective Number of Samples
+<!-- # TODO:	Class-Balanced Loss Based on Effective Number of Samples -->
 
-# TODO:	Decoupling Representation and Classifier for Long-Tailed Recognition
+<!-- # TODO:	Decoupling Representation and Classifier for Long-Tailed Recognition -->
 
 # Overcoming Classifier Imbalance for Long-tail Object Detection with Balanced Group Softmax
 
@@ -280,4 +280,4 @@ The results are underwhelming to say the least. The baseline model outperforms t
 
 We assume that a mistake was made while adapting the architecture to the new dataset but ran out of time trying to find it.
 
-# TODO: Conclusion?
+<!-- # TODO: Conclusion? -->
